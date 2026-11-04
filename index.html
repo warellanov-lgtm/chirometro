@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chirómetro · ¿Qué tan chiro eres?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F7F8FC; --surface:#FFFFFF; --ink:#14213D; --muted:#4A5573;
+  --yellow:#FFD23F; --red:#E63946; --green:#2A9D8F; --line:#14213D; --soft:#EEF1FA;
+  --on-yellow:#14213D;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1424; --surface:#172036; --ink:#F1F3FA; --muted:#A9B2CC;
+    --yellow:#FFD23F; --red:#FF6B74; --green:#4CC3B3; --line:#F1F3FA; --soft:#1E2A45;
+    --on-yellow:#14213D; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1424; --surface:#172036; --ink:#F1F3FA; --muted:#A9B2CC;
+  --yellow:#FFD23F; --red:#FF6B74; --green:#4CC3B3; --line:#F1F3FA; --soft:#1E2A45;
+  --on-yellow:#14213D; color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0;min-height:100%;background:var(--paper);color:var(--ink);
+  font-family:"Bricolage Grotesque",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:1.0625rem;line-height:1.5;-webkit-font-smoothing:antialiased;
+}
+main{max-width:34rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--red);outline-offset:3px}
+.screen{display:none}
+.screen.on{display:block}
+
+/* Botón principal */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+  background:var(--yellow);color:var(--on-yellow);border:3px solid var(--line);
+  border-radius:14px;padding:.9rem 1.4rem;font-weight:750;font-size:1.1rem;
+  box-shadow:5px 5px 0 var(--line);transition:transform .08s,box-shadow .08s;
+  text-decoration:none;
+}
+.btn:active{transform:translate(4px,4px);box-shadow:1px 1px 0 var(--line)}
+.btn.ghost{background:var(--surface);color:var(--ink)}
+.btn.wide{width:100%}
+
+/* Intro */
+.brand{font-size:.9rem;color:var(--muted);margin:0 0 1.25rem}
+.title{
+  font-size:clamp(3rem,15vw,5.2rem);line-height:.88;font-weight:800;
+  font-stretch:75%;letter-spacing:-.02em;margin:.5rem 0 1rem;
+}
+.lead{font-size:1.2rem;max-width:30ch;margin:0 0 1.75rem}
+.facts{color:var(--muted);font-size:.95rem;margin:1rem 0 0}
+
+/* Medidor */
+.gauge{width:100%;max-width:22rem;display:block;margin:0 auto}
+.gauge .needle{transform-origin:150px 150px;transition:transform 1.6s cubic-bezier(.2,1.4,.4,1)}
+.gauge.wobble .needle{animation:wobble 2.4s ease-in-out infinite}
+@keyframes wobble{
+  0%{transform:rotate(-70deg)}30%{transform:rotate(40deg)}55%{transform:rotate(-20deg)}
+  80%{transform:rotate(55deg)}100%{transform:rotate(-70deg)}
+}
+@media (prefers-reduced-motion: reduce){
+  .gauge.wobble .needle{animation:none;transform:rotate(-30deg)}
+  .gauge .needle{transition:none}
+}
+
+/* Quiz */
+.bar{height:12px;border:3px solid var(--line);border-radius:99px;background:var(--surface);overflow:hidden;margin:.25rem 0 1.5rem}
+.bar i{display:block;height:100%;background:var(--yellow);width:0;transition:width .3s}
+.qtop{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:.95rem}
+.back{background:none;border:0;padding:.25rem 0;text-decoration:underline;color:var(--muted)}
+.back[disabled]{visibility:hidden}
+.q{font-size:clamp(1.6rem,6.5vw,2.1rem);line-height:1.12;font-weight:750;font-stretch:85%;margin:0 0 1.5rem}
+.opts{display:grid;gap:.75rem}
+.opt{
+  text-align:left;background:var(--surface);border:3px solid var(--line);border-radius:14px;
+  padding:.95rem 1.1rem;font-size:1.05rem;box-shadow:4px 4px 0 var(--line);
+  transition:transform .08s,box-shadow .08s,background .15s;
+}
+.opt:hover{background:var(--soft)}
+.opt.picked{background:var(--yellow);color:var(--on-yellow);transform:translate(3px,3px);box-shadow:1px 1px 0 var(--line)}
+
+/* Calculando */
+.calc{text-align:center;padding-top:3rem}
+.calc p{font-size:1.3rem;font-weight:700;margin-top:1.5rem}
+
+/* Comprobante */
+.ticket{
+  background:var(--surface);border:3px solid var(--line);border-radius:18px;
+  box-shadow:7px 7px 0 var(--line);overflow:hidden;margin-bottom:1.5rem;
+}
+.ticket-head{background:var(--yellow);color:var(--on-yellow);padding:.8rem 1.2rem;display:flex;justify-content:space-between;font-weight:700;font-size:.95rem;border-bottom:3px dashed var(--line)}
+.ticket-body{padding:1.2rem 1.2rem 1.4rem;text-align:center}
+.emoji{font-size:3rem;line-height:1;margin:.25rem 0 .5rem}
+.arch{font-size:clamp(2rem,9vw,2.7rem);line-height:1;font-weight:800;font-stretch:80%;margin:0 0 .5rem}
+.tag{font-size:1.15rem;font-weight:600;margin:0 0 1rem}
+.desc{color:var(--muted);margin:0 auto 1rem;max-width:34ch;text-align:left}
+.pct{display:inline-block;background:var(--soft);border:2px solid var(--line);border-radius:10px;padding:.5rem .8rem;font-weight:700}
+.score{font-size:.95rem;color:var(--muted);margin:.75rem 0 0}
+
+.row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:2.5rem}
+@media (max-width:380px){.row{grid-template-columns:1fr}}
+
+h2{font-size:2rem;line-height:1.05;font-weight:800;font-stretch:80%;margin:0 0 .4rem}
+.sub{color:var(--muted);margin:0 0 1.25rem}
+.step{border:3px solid var(--line);border-radius:16px;background:var(--surface);padding:1.1rem 1.2rem;margin-bottom:1rem;display:grid;grid-template-columns:2.4rem 1fr;gap:.8rem}
+.step .n{width:2.4rem;height:2.4rem;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-weight:800}
+.step h3{margin:.15rem 0 .35rem;font-size:1.2rem;line-height:1.2}
+.step p{margin:0 0 .5rem}
+.step .dato{margin:0;font-size:.95rem;color:var(--muted);border-left:4px solid var(--yellow);padding-left:.7rem}
+
+.lead-box{background:var(--ink);color:var(--paper);border-radius:18px;padding:1.4rem 1.25rem;margin:2rem 0 1.5rem}
+.lead-box h2{color:var(--paper)}
+.lead-box p{opacity:.85;margin:0 0 1rem}
+label{display:block;font-weight:650;font-size:.95rem;margin:.75rem 0 .3rem}
+input{
+  width:100%;font:inherit;padding:.8rem .9rem;border-radius:12px;border:3px solid var(--yellow);
+  background:var(--paper);color:var(--ink);
+}
+.lead-box .btn{margin-top:1.1rem;box-shadow:5px 5px 0 var(--yellow);border-color:var(--yellow)}
+.err{color:var(--yellow);font-weight:650;min-height:1.5rem;margin:.5rem 0 0}
+.ok{font-size:1.15rem;font-weight:700}
+
+.legal{font-size:.82rem;color:var(--muted);margin-top:2rem;line-height:1.45}
+.restart{background:none;border:0;text-decoration:underline;color:var(--muted);padding:.5rem 0}
+</style>
+</head>
+<body>
+<main>
+
+  <!-- INTRO -->
+  <section class="screen on" id="s-intro">
+    <p class="brand">Una herramienta de Futuro Casa de Valores</p>
+    <svg class="gauge wobble" id="g-intro" viewBox="0 0 300 175" aria-hidden="true"></svg>
+    <h1 class="title">Chiró&shy;metro</h1>
+    <p class="lead">¿Qué tan chiro eres de verdad? Diez preguntas, dos minutos y cero juicio (bueno, poquito).</p>
+    <button class="btn wide" id="start">Medir mi nivel de chiro</button>
+    <p class="facts">Al final recibes tu diagnóstico y un Plan de Rescate con tres pasos concretos.</p>
+  </section>
+
+  <!-- QUIZ -->
+  <section class="screen" id="s-quiz" aria-live="polite">
+    <div class="qtop">
+      <button class="back" id="back">Anterior</button>
+      <span id="count">1 de 10</span>
+    </div>
+    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="10" id="bar"><i></i></div>
+    <h2 class="q" id="qtext"></h2>
+    <div class="opts" id="opts"></div>
+  </section>
+
+  <!-- CALCULANDO -->
+  <section class="screen calc" id="s-calc">
+    <svg class="gauge wobble" id="g-calc" viewBox="0 0 300 175" aria-hidden="true"></svg>
+    <p>Calibrando el chirómetro…</p>
+  </section>
+
+  <!-- RESULTADO -->
+  <section class="screen" id="s-result">
+    <article class="ticket" id="ticket">
+      <div class="ticket-head"><span>Comprobante de chiro</span><span id="tdate"></span></div>
+      <div class="ticket-body">
+        <svg class="gauge" id="g-result" viewBox="0 0 300 175" role="img" aria-label="Medidor de chiro"></svg>
+        <div class="emoji" id="remoji"></div>
+        <h1 class="arch" id="rname"></h1>
+        <p class="tag" id="rtag"></p>
+        <p class="desc" id="rdesc"></p>
+        <span class="pct" id="rpct"></span>
+        <p class="score" id="rscore"></p>
+      </div>
+    </article>
+
+    <div class="row">
+      <button class="btn" id="share">Compartir resultado</button>
+      <button class="btn ghost" id="dare">Retar a un pana</button>
+    </div>
+
+    <h2>Tu Plan de Rescate</h2>
+    <p class="sub">Tres pasos, ordenados por dónde más se te escapa la plata.</p>
+    <div id="plan"></div>
+
+    <div class="lead-box">
+      <h2>Recibe tu plan completo por WhatsApp</h2>
+      <p>Te enviamos una semana de retos cortos para bajar tu nivel de chiro, uno por día.</p>
+      <form id="leadf" novalidate>
+        <label for="lname">Tu nombre</label>
+        <input id="lname" autocomplete="given-name" placeholder="Ej. Andrea">
+        <label for="lphone">Tu WhatsApp</label>
+        <input id="lphone" inputmode="tel" autocomplete="tel" placeholder="09XXXXXXXX">
+        <p class="err" id="lerr"></p>
+        <button class="btn wide" type="submit">Enviarme el plan</button>
+      </form>
+      <p class="ok" id="lok" hidden></p>
+    </div>
+
+    <button class="restart" id="restart">Volver a hacer el test</button>
+
+    <p class="legal">Contenido educativo. No constituye asesoría de inversión personalizada ni promesa de rendimiento. Las proyecciones son ilustrativas. Las comparativas con otros ecuatorianos son referenciales en esta versión de prueba. Casa de Valores Futuro FUTUROCAPITAL S.A.</p>
+  </section>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Medidor ----------
+  function drawGauge(svg){
+    svg.innerHTML =
+      '<defs><linearGradient id="gg-'+svg.id+'" x1="0" x2="1" y1="0" y2="0">'+
+      '<stop offset="0" stop-color="var(--red)"/><stop offset=".5" stop-color="var(--yellow)"/><stop offset="1" stop-color="var(--green)"/></linearGradient></defs>'+
+      '<path d="M30 150 A120 120 0 0 1 270 150" fill="none" stroke="var(--line)" stroke-width="34" stroke-linecap="round"/>'+
+      '<path d="M30 150 A120 120 0 0 1 270 150" fill="none" stroke="url(#gg-'+svg.id+')" stroke-width="26" stroke-linecap="round"/>'+
+      '<text x="18" y="172" font-size="15" font-weight="800" fill="var(--ink)">CHIRO</text>'+
+      '<text x="282" y="172" font-size="15" font-weight="800" fill="var(--ink)" text-anchor="end">PRÓSPERO</text>'+
+      '<g class="needle"><path d="M146 150 L150 48 L154 150 Z" fill="var(--ink)"/></g>'+
+      '<circle cx="150" cy="150" r="12" fill="var(--ink)"/><circle cx="150" cy="150" r="5" fill="var(--yellow)"/>';
+  }
+  ["g-intro","g-calc","g-result"].forEach(function(id){ drawGauge(document.getElementById(id)); });
+
+  // ---------- Preguntas ----------
+  var Q = [
+    {dim:"flujo", q:"¿A qué día del mes ya estás contando monedas?",
+     o:["Nunca, siempre me sobra","Por el día 25","Día 15, justo antes de la quincena","Día 3. Para qué te miento"]},
+    {dim:"emergencia", q:"Si mañana se te daña el carro o el celular, ¿con qué lo pagas?",
+     o:["Con mi fondo de emergencia, para eso está","Con lo que tengo ahorrado, aunque me duela","Con la tarjeta y que Dios me ayude","Mi fondo de emergencia se llama mamá"]},
+    {dim:"deuda", q:"Tu relación con la tarjeta de crédito es…",
+     o:["La pago completa cada mes","A veces difiero alguna compra","Pago el mínimo y rezo","Tengo una tarjeta para pagar la otra tarjeta"]},
+    {dim:"hormiga", q:"¿Cuántas suscripciones pagas al mes?",
+     o:["Solo las que de verdad uso","Hay una que olvidé cancelar","Netflix, Spotify, Disney, Max… y veo YouTube","Ni sé. Me da miedo revisar el estado de cuenta"]},
+    {dim:"ahorro", q:"Llega el décimo tercero. ¿Qué pasa con él?",
+     o:["Lo invierto apenas cae","Ahorro una parte y disfruto otra","Se va todito en regalos de diciembre","Ya lo debía desde agosto"]},
+    {dim:"inversion", q:"¿Dónde tienes invertida tu plata?",
+     o:["En un portafolio que reviso cada mes","En una póliza del banco","Algún día voy a invertir…","Mi inversión es el número de la lotería"]},
+    {dim:"hormiga", q:"¿Qué tanto pides delivery?",
+     o:["Cocino o llevo táper","Un antojito a la semana","El motorizado ya me saluda por mi nombre","Los motorizados conocen mi casa mejor que mis panas"]},
+    {dim:"flujo", q:"¿Sabes en qué se te va la plata cada mes?",
+     o:["Sé exactamente en qué se va cada dólar","Más o menos tengo idea","Hago el presupuesto en enero y lo olvido en febrero","¿Presupuesto? Vivo en modo sorpresa"]},
+    {dim:"educacion", q:"Un pana te ofrece un “negocio seguro” que paga 10% mensual. Tú…",
+     o:["Pregunto si está regulado y paso","Lo pienso, pero no entro","Entro con poquito, por si acaso","Ya le transferí. ¿Cuándo me pagan?"]},
+    {dim:"inversion", q:"¿Cuál es tu plan para cuando te jubiles?",
+     o:["Tengo un plan propio, aparte del IESS","Aporto al IESS y voy ahorrando algo","Confío plenamente en el IESS","Ganarme la lotería o que mis hijos me mantengan"]}
+  ];
+
+  // ---------- Arquetipos (0 a 30 puntos) ----------
+  var ARCH = [
+    {max:6, emoji:"🌱", name:"Próspero en Construcción", tag:"Tu billetera duerme tranquila.",
+     desc:"Pagas a tiempo, ahorras y ya piensas en el futuro. El reto ahora no es sobrevivir: es hacer que tu plata trabaje más que tú."},
+    {max:12, emoji:"🧘", name:"Ex-Chiro en Rehabilitación", tag:"Saliste del hoyo… pero todavía lo extrañas.",
+     desc:"Ya entendiste el juego y vas por buen camino. Unos cuantos hábitos te separan de dejar el chiro atrás para siempre."},
+    {max:18, emoji:"😎", name:"Chiro con Estilo", tag:"Ganas bien. Gastas mejor.",
+     desc:"No te falta ingreso, te falta que se quede. Tu plata entra con fuerza y sale con más estilo todavía: delivery, suscripciones y el clásico “me lo merezco”."},
+    {max:24, emoji:"📅", name:"Chiro de Quincena", tag:"Vives como rey cinco días y sobrevives diez.",
+     desc:"Tu economía tiene dos estaciones: “acaba de caer el sueldo” y “¿alguien tiene para el bus?”. La buena noticia: es el chiro más fácil de curar."},
+    {max:30, emoji:"🏆", name:"Chiro Crónico, Nivel Leyenda", tag:"No estás chiro. Eres chiro.",
+     desc:"El fin de mes te llega el día 5 y tu fondo de emergencia tiene nombre y apellido. Respira: todo próspero empezó por aquí, y tú ya diste el primer paso."}
+  ];
+
+  // ---------- Plan de Rescate por dimensión ----------
+  var PLAN = {
+    flujo:{t:"Mira a dónde se va tu plata",
+      p:"Durante 7 días anota cada gasto, hasta el chicle. Luego reparte tu sueldo con la regla 50/30/20: 50% necesidades, 30% gustos, 20% ahorro.",
+      d:"Solo registrar tus gastos una semana suele recortar los gastos impulsivos, porque empiezas a verlos."},
+    emergencia:{t:"Arma tu colchón de emergencia",
+      p:"El día que cobras, transfiere automáticamente $20 a una cuenta separada que no toques. La meta: tres meses de gastos.",
+      d:"Sin colchón, cualquier imprevisto termina en la tarjeta de crédito, y ahí empieza el círculo del chiro."},
+    deuda:{t:"Sal de la trampa del pago mínimo",
+      p:"Haz una lista de tus deudas y ataca primero la de mayor tasa. Deja de diferir compras del día a día.",
+      d:"Pagar solo el mínimo hace que una compra pequeña te cobre intereses durante meses o años."},
+    hormiga:{t:"Caza tus gastos hormiga",
+      p:"Hoy mismo cancela una suscripción que no uses y lleva táper al menos dos días por semana.",
+      d:"$5 diarios en antojos son $1.825 al año. Eso ya es una inversión."},
+    ahorro:{t:"Ponle destino a tu décimo antes de que llegue",
+      p:"Decide hoy que al menos la mitad de tu próximo décimo va directo a ahorro o inversión. El resto, disfrútalo sin culpa.",
+      d:"La plata sin destino siempre encuentra uno, y casi nunca es el que querías."},
+    inversion:{t:"Empieza a invertir, aunque sea poquito",
+      p:"Invertir no es solo para ricos. En una casa de valores regulada puedes empezar en renta fija con montos pequeños y aportes mensuales.",
+      d:"Ejemplo ilustrativo: $100 al mes durante 10 años son $12.000 aportados; a un 7% anual compuesto llegarían a unos $17.300. No es promesa de rendimiento."},
+    educacion:{t:"Blíndate contra las estafas",
+      p:"Antes de poner un dólar, verifica que la empresa esté autorizada por la Superintendencia de Compañías, Valores y Seguros.",
+      d:"Si te prometen 10% mensual garantizado, es estafa hasta que se demuestre lo contrario."}
+  };
+  var PRO = [
+    {t:"Diversifica de verdad",p:"Revisa que tu plata no esté concentrada en un solo instrumento, emisor o plazo.",d:"Diversificar no elimina el riesgo, pero evita que un solo golpe te tumbe."},
+    {t:"Revisa los costos que pagas",p:"Compara comisiones y tasas de tus inversiones y cuentas. Un punto de diferencia pesa mucho en 10 años.",d:"Lo que no pagas en costos se queda trabajando para ti."},
+    {t:"Ponle fecha a tu libertad financiera",p:"Calcula cuánto necesitas para vivir de tus inversiones y a qué edad quieres lograrlo.",d:"Una meta con número y fecha se cumple mucho más que un “algún día”."}
+  ];
+
+  // ---------- Estado ----------
+  var answers = new Array(Q.length).fill(null);
+  var i = 0, locked = false, lastResult = null;
+  var $ = function(id){ return document.getElementById(id); };
+
+  function show(id){
+    document.querySelectorAll(".screen").forEach(function(s){ s.classList.remove("on"); });
+    $(id).classList.add("on");
+    window.scrollTo(0,0);
+  }
+
+  function renderQ(){
+    var item = Q[i];
+    $("count").textContent = (i+1)+" de "+Q.length;
+    $("bar").querySelector("i").style.width = (i/Q.length*100)+"%";
+    $("bar").setAttribute("aria-valuenow", i);
+    $("back").disabled = i===0;
+    $("qtext").textContent = item.q;
+    var box = $("opts"); box.innerHTML = "";
+    item.o.forEach(function(txt, idx){
+      var b = document.createElement("button");
+      b.className = "opt" + (answers[i]===idx ? " picked" : "");
+      b.textContent = txt;
+      b.addEventListener("click", function(){ pick(idx, b); });
+      box.appendChild(b);
+    });
+    locked = false;
+  }
+
+  function pick(idx, el){
+    if(locked) return; locked = true;
+    answers[i] = idx;
+    document.querySelectorAll(".opt").forEach(function(o){ o.classList.remove("picked"); });
+    el.classList.add("picked");
+    setTimeout(function(){
+      if(i < Q.length-1){ i++; renderQ(); }
+      else { $("bar").querySelector("i").style.width = "100%"; calc(); }
+    }, 280);
+  }
+
+  function calc(){
+    show("s-calc");
+    setTimeout(result, 1700);
+  }
+
+  function result(){
+    var total = answers.reduce(function(a,b){ return a+b; }, 0);
+    var arch = ARCH.find(function(a){ return total <= a.max; });
+
+    // Peso por dimensión
+    var dims = {};
+    Q.forEach(function(q, k){
+      dims[q.dim] = dims[q.dim] || {s:0,m:0};
+      dims[q.dim].s += answers[k]; dims[q.dim].m += 3;
+    });
+    var order = Object.keys(dims).map(function(d){ return {d:d, r:dims[d].s/dims[d].m}; })
+      .filter(function(x){ return x.r > 0; })
+      .sort(function(a,b){ return b.r - a.r; });
+
+    var steps = (total <= 6) ? [] : order.slice(0,3).map(function(x){ return PLAN[x.d]; });
+    var k = 0; while(steps.length < 3){ steps.push(PRO[k++]); }
+
+    // Comparativa referencial (prototipo)
+    var pct = Math.round(Math.min(97, Math.max(3, 100*Math.pow(total/30, 0.85))));
+    var pctTxt = total <= 6
+      ? "Eres menos chiro que el "+(100-pct)+"% de ecuatorianos"
+      : "Eres más chiro que el "+pct+"% de ecuatorianos";
+
+    $("remoji").textContent = arch.emoji;
+    $("rname").textContent = arch.name;
+    $("rtag").textContent = arch.tag;
+    $("rdesc").textContent = arch.desc;
+    $("rpct").textContent = pctTxt;
+    $("rscore").textContent = "Nivel de chiro: "+Math.round(total/30*100)+" de 100";
+    $("tdate").textContent = new Date().toLocaleDateString("es-EC",{day:"numeric",month:"short",year:"numeric"});
+
+    var plan = $("plan"); plan.innerHTML = "";
+    steps.forEach(function(s, n){
+      var d = document.createElement("div"); d.className = "step";
+      d.innerHTML = '<div class="n">'+(n+1)+'</div><div><h3></h3><p></p><p class="dato"></p></div>';
+      d.querySelector("h3").textContent = s.t;
+      d.querySelector("p").textContent = s.p;
+      d.querySelector(".dato").textContent = s.d;
+      plan.appendChild(d);
+    });
+
+    lastResult = {arch:arch, total:total};
+    show("s-result");
+    var needle = $("g-result").querySelector(".needle");
+    needle.style.transform = "rotate(-90deg)";
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      needle.style.transform = "rotate("+(90 - 180*total/30)+"deg)";
+    }); });
+  }
+
+  // ---------- Compartir ----------
+  function shareText(dare){
+    var r = lastResult;
+    return dare
+      ? "Te reto 😏 Hice el Chirómetro y salí “"+r.arch.name+"” "+r.arch.emoji+". A ver si tú sales menos chiro que yo."
+      : "Hice el Chirómetro y salí “"+r.arch.name+"” "+r.arch.emoji+" — "+r.arch.tag+" ¿Qué tan chiro eres tú?";
+  }
+  function doShare(dare){
+    var text = shareText(dare);
+    if(navigator.share){
+      navigator.share({title:"Chirómetro", text:text}).catch(function(){});
+    } else {
+      window.open("https://wa.me/?text="+encodeURIComponent(text), "_blank", "noopener");
+    }
+  }
+  $("share").addEventListener("click", function(){ doShare(false); });
+  $("dare").addEventListener("click", function(){ doShare(true); });
+
+  // ---------- Captura de contacto (simulada) ----------
+  $("leadf").addEventListener("submit", function(e){
+    e.preventDefault();
+    var n = $("lname").value.trim(), p = $("lphone").value.replace(/\D/g,"");
+    if(!n){ $("lerr").textContent = "Escribe tu nombre para enviarte el plan."; return; }
+    if(!/^(09\d{8}|5939\d{8})$/.test(p)){ $("lerr").textContent = "Escribe un número de celular ecuatoriano, por ejemplo 0991234567."; return; }
+    $("lerr").textContent = "";
+    $("leadf").hidden = true;
+    var ok = $("lok"); ok.hidden = false;
+    ok.textContent = "Listo, "+n+". Tu plan va en camino. (Versión de prueba: aquí el contacto entraría al CRM y al flujo de WhatsApp.)";
+  });
+
+  // ---------- Navegación ----------
+  $("start").addEventListener("click", function(){ i = 0; renderQ(); show("s-quiz"); });
+  $("back").addEventListener("click", function(){ if(i>0){ i--; renderQ(); } });
+  $("restart").addEventListener("click", function(){
+    answers = new Array(Q.length).fill(null); i = 0;
+    $("leadf").hidden = false; $("lok").hidden = true;
+    show("s-intro");
+  });
+})();
+</script>
+</body>
+</html>
